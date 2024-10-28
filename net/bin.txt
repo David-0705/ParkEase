@@ -1,0 +1,399 @@
+commands:
+ipconfig: 		Displays network configuration details for Windows, including IP addresses, subnet masks, and default gateways.
+ping:		Sends packets to a specified IP or hostname to check network connectivity and measure round-trip time.
+traceroute: 	Shows the path packets take to reach a destination IP, listing all intermediary network hops (Linux/Mac).
+tracepath: 	Similar to traceroute, it shows the path to a destination, but doesn’t require superuser permissions (Linux).
+nslookup: 	Queries DNS servers to find IP addresses associated with domain names or vice versa.
+netstat: 		Displays network connections, routing tables, interface statistics, and port information.
+ARP: 		Shows or modifies the ARP (Address Resolution Protocol) table, mapping IP addresses to MAC addresses.
+ip addr show:	Displays all IP addresses and network interfaces on a system (Linux).
+dig: 		Queries DNS servers for detailed domain information, including records like A, MX, and TXT.
+route: 		Shows or modifies the IP routing table, displaying paths and rules for directing network traffic.
+
+Nmap:
+sudo apt-get install nmap
+nmap --version
+List Scan: 		A list scan generally lists the possible host without sending any packets to the targeted host.
+command:	nmap -sL www.
+Ping Sweep: 	Ping sweep discovers on the basis the host is powered on.
+command:	nmap -sP www.
+TCP SYN Ping: 	Nmap checks whether a host is online.
+command: 	nmap -PS www.
+TCP ACK Ping: 	Nmap checks whether the host is responding.
+command: 	nmap -sA
+ICMP Echo Ping: 	Nmap sends ICMP packets to the available host
+command:	nmap -PE www.
+ARP Ping:		ARP ping scan is used to discover the host devices in the same network. sometimes it will not visible due to firewall filtering.
+command:	nmap -PR www.
+Traceroute: 	Traceroute helps to discover the following hops or pathways to the targeted host.
+command:	nmap -sn –traceroute www.
+_______________________________________________________________________________________________________________
+
+
+hamming code:
+python:
+def calculate_parity_bits(data_bits, parity_type):
+    """Calculate the parity bits for the given data bits."""
+    p1 = (data_bits[0] + data_bits[1] + data_bits[3]) % 2
+    p2 = (data_bits[0] + data_bits[2] + data_bits[3]) % 2
+    p4 = (data_bits[1] + data_bits[2] + data_bits[3]) % 2
+    
+    if parity_type == "odd":
+        p1 = 1 - p1
+        p2 = 1 - p2
+        p4 = 1 - p4
+    
+    return p1, p2, p4
+
+def generate_hamming_code(data_bits, parity_type):
+    """Generate the Hamming code for the given data bits."""
+    p1, p2, p4 = calculate_parity_bits(data_bits, parity_type)
+    return [data_bits[0], data_bits[1], data_bits[2], p4, data_bits[3], p2, p1]
+
+def detect_and_correct_error(hamming_code, parity_type):
+    """Detect and correct the error in the received Hamming code."""
+    p1, p2, p4 = calculate_parity_bits(
+        [hamming_code[0], hamming_code[1], hamming_code[4], hamming_code[2]], parity_type
+    )
+    
+    c1 = (p1 + hamming_code[6]) % 2
+    c2 = (p2 + hamming_code[5]) % 2
+    c4 = (p4 + hamming_code[3]) % 2
+    
+    error_position = c1 + (c2 << 1) + (c4 << 2)
+    
+    if error_position != 0:
+        hamming_code[error_position - 1] = 1 - hamming_code[error_position - 1]
+        print(f"Error detected and corrected at position {error_position}.")
+    else:
+        print("No error detected.")
+    
+    return hamming_code
+
+def main():
+    parity_type = input("Enter parity type (even/odd): ").strip().lower()
+    if parity_type not in ["even", "odd"]:
+        print("Invalid parity type.")
+        return
+    
+    data_bits = []
+    print("Enter the 4 data bits (D7 D6 D5 D3):")
+    for i in range(4):
+        bit = int(input(f"Enter the value of D{7 - 2**i}: "))
+        data_bits.append(bit)
+    
+    print(f"The data bits entered are: {' '.join(map(str, data_bits))}")
+    
+    hamming_code = generate_hamming_code(data_bits, parity_type)
+    print(f"The Hamming code is: {' '.join(map(str, hamming_code))}")
+    
+    received_code = list(map(int, input("Enter the received Hamming code (with space between bits): ").strip().split()))
+    if len(received_code) != 7:
+        print("Invalid Hamming code length.")
+        return
+    
+    corrected_code = detect_and_correct_error(received_code, parity_type)
+    print(f"The corrected Hamming code is: {' '.join(map(str, corrected_code))}")
+    
+    decoded_data = [corrected_code[0], corrected_code[1], corrected_code[3], corrected_code[4]]
+    print(f"The decoded data bits are: {' '.join(map(str, decoded_data))}")
+
+if __name__ == "__main__":
+    main()
+_______________________________________________________________________________________________________________________________________________________________________
+
+hamming code in c
+#include <stdio.h>
+
+void calculateParityBits(int data_bits[], int parity_type, int *p1, int *p2, int *p4) {
+    *p1 = (data_bits[0] + data_bits[1] + data_bits[3]) % 2;
+    *p2 = (data_bits[0] + data_bits[2] + data_bits[3]) % 2;
+    *p4 = (data_bits[1] + data_bits[2] + data_bits[3]) % 2;
+
+    if (parity_type == 1) {  // Odd parity
+        *p1 = 1 - *p1;
+        *p2 = 1 - *p2;
+        *p4 = 1 - *p4;
+    }
+}
+
+void generateHammingCode(int data_bits[], int parity_type, int hamming_code[]) {
+    int p1, p2, p4;
+    calculateParityBits(data_bits, parity_type, &p1, &p2, &p4);
+
+    hamming_code[0] = data_bits[0];  // D7
+    hamming_code[1] = data_bits[1];  // D6
+    hamming_code[2] = data_bits[2];  // D5
+    hamming_code[3] = p4;            // P4
+    hamming_code[4] = data_bits[3];  // D3
+    hamming_code[5] = p2;            // P2
+    hamming_code[6] = p1;            // P1
+}
+
+void detectAndCorrectError(int hamming_code[], int parity_type) {
+    int p1, p2, p4;
+    calculateParityBits((int[]){hamming_code[0], hamming_code[1], hamming_code[4], hamming_code[2]}, parity_type, &p1, &p2, &p4);
+
+    int c1 = (p1 + hamming_code[6]) % 2;
+    int c2 = (p2 + hamming_code[5]) % 2;
+    int c4 = (p4 + hamming_code[3]) % 2;
+
+    int error_position = c1 + (c2 << 1) + (c4 << 2);
+
+    if (error_position != 0) {
+        printf("Error detected and corrected at position %d.\n", error_position);
+        hamming_code[error_position - 1] = 1 - hamming_code[error_position - 1];  // Correct the bit
+    } else {
+        printf("No error detected.\n");
+    }
+}
+
+int main() {
+    int parity_type;
+    int data_bits[4];
+    int hamming_code[7];
+    int received_code[7];
+
+    printf("Enter parity type (0 for even, 1 for odd): ");
+    scanf("%d", &parity_type);
+
+    printf("Enter the 4 data bits (D7 D6 D5 D3): ");
+    for (int i = 0; i < 4; i++) {
+        printf("Enter the value of D%d: ", 7 - (1 << i));
+        scanf("%d", &data_bits[i]);
+    }
+
+    printf("The data bits entered are: ");
+    for (int i = 0; i < 4; i++) {
+        printf("%d ", data_bits[i]);
+    }
+    printf("\n");
+
+    generateHammingCode(data_bits, parity_type, hamming_code);
+
+    printf("The Hamming code is: ");
+    for (int i = 0; i < 7; i++) {
+        printf("%d ", hamming_code[i]);
+    }
+    printf("\n");
+
+    printf("Enter the received Hamming code (7 bits, space-separated): ");
+    for (int i = 0; i < 7; i++) {
+        scanf("%d", &received_code[i]);
+    }
+
+    detectAndCorrectError(received_code, parity_type);
+
+    printf("The corrected Hamming code is: ");
+    for (int i = 0; i < 7; i++) {
+        printf("%d ", received_code[i]);
+    }
+    printf("\n");
+
+    printf("The decoded data bits are: %d %d %d %d\n", received_code[0], received_code[1], received_code[3], received_code[4]);
+
+    return 0;
+}
+_____________________________________________________________________________________________________________________
+
+
+
+Socket program in java
+TCP:
+MyServer file:
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class MyServer {
+    public static void main(String[] args) {
+        try (ServerSocket ss = new ServerSocket(6666)) {
+            System.out.println("Server is listening on port 6666");
+
+            // Wait for a client to connect
+            Socket socket = ss.accept();
+            System.out.println("Client connected");
+
+            // Set up input and output streams
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            String inputLine;
+
+            // Communication loop
+            while ((inputLine = in.readLine()) != null) {
+                System.out.println("Client: " + inputLine);
+                String response = "Server: " + processInput(inputLine);
+                out.println(response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String processInput(String input) {
+        // Simple response logic
+        if (input.equalsIgnoreCase("hi")) {
+            return "Hello! How can I help you?";
+        } else if (input.equalsIgnoreCase("bye")) {
+            return "Goodbye!";
+        } else {
+            return "I don't understand that.";
+        }
+    }
+}
+
+
+
+MyClient Code:
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Scanner;
+
+public class MyClient {
+    public static void main(String[] args) {
+        try (Socket socket = new Socket("localhost", 6666)) {
+            System.out.println("Connected to the server");
+
+            // Set up input and output streams
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            Scanner scanner = new Scanner(System.in);
+            String userInput;
+
+            System.out.println("Type 'bye' to exit.");
+
+            // Communication loop
+            while (true) {
+                System.out.print("You: ");
+                userInput = scanner.nextLine();
+                out.println(userInput); // Send user input to server
+
+                // Exit the loop if the user types "bye"
+                if (userInput.equalsIgnoreCase("bye")) {
+                    break;
+                }
+
+                // Read the server's response
+                String response = in.readLine();
+                System.out.println(response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+______________________________________________________________________________________________________________________
+
+socket program in java 
+UDP
+Client Side Program:
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.Scanner;
+
+public class UdpBaseClient {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        DatagramSocket ds = null;
+        try {
+            // Step 1: Create the socket object for carrying the data.
+            ds = new DatagramSocket();
+            InetAddress ip = InetAddress.getLocalHost();
+
+            // Loop while user does not enter "bye"
+            while (true) {
+                System.out.print("Enter message (type 'bye' to exit): ");
+                String inp = sc.nextLine();
+
+                // Convert the String input into the byte array.
+                byte[] buf = inp.getBytes();
+
+                // Step 2: Create the DatagramPacket for sending the data.
+                DatagramPacket dpSend = new DatagramPacket(buf, buf.length, ip, 1234);
+
+                // Step 3: Invoke the send call to actually send the data.
+                ds.send(dpSend);
+
+                // Break the loop if the user enters "bye"
+                if (inp.equalsIgnoreCase("bye")) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        } finally {
+            // Close the DatagramSocket
+            if (ds != null && !ds.isClosed()) {
+                ds.close();
+            }
+            sc.close();
+        }
+    }
+}
+
+
+Server Side Program:
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+public class UdpBaseServer {
+    public static void main(String[] args) {
+        DatagramSocket ds = null;
+        try {
+            // Step 1: Create a socket to listen at port 1234
+            ds = new DatagramSocket(1234);
+            byte[] receive = new byte[65535];
+
+            while (true) {
+                // Step 2: Create a DatagramPacket to receive the data
+                DatagramPacket dpReceive = new DatagramPacket(receive, receive.length);
+
+                // Step 3: Receive the data in byte buffer
+                ds.receive(dpReceive);
+
+                // Convert byte data to string representation
+                String message = data(dpReceive.getData());
+                System.out.println("Client: " + message);
+
+                // Exit the server if the client sends "bye"
+                if (message.trim().equalsIgnoreCase("bye")) {
+                    System.out.println("Client sent bye. EXITING.");
+                    break;
+                }
+
+                // Clear the buffer after processing the received message
+                receive = new byte[65535];
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        } finally {
+            // Close the socket if it is open
+            if (ds != null && !ds.isClosed()) {
+                ds.close();
+            }
+        }
+    }
+
+    // A utility method to convert the byte array data into a string representation.
+    public static String data(byte[] a) {
+        if (a == null) return null;
+        StringBuilder ret = new StringBuilder();
+        for (byte b : a) {
+            if (b == 0) break; // Stop at null terminator
+            ret.append((char) b);
+        }
+        return ret.toString().trim();
+    }
+}
+___________________________________________________________________________________________________________________________________
